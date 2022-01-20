@@ -4,8 +4,7 @@
     <el-form :inline="true" class="demo-form-inline">
       <el-form-item label="书籍ID">
         <el-input v-model="bookQuery.id" placeholder="书籍ID"/>
-      </el-form-item>
-
+      </el-form-item >
       <el-form-item label="书名">
         <el-input v-model="bookQuery.bookName" placeholder="书名"/>
       </el-form-item>
@@ -35,14 +34,14 @@
 
       <el-form-item label="一级分类">
         <el-select v-model="bookQuery.yijiFenlei" clearable placeholder="请选择">
-          <el-option :value="1" label="是"/>
-          <el-option :value="0" label="否"/>
+<!--          <el-option :value="1" label="是"/>-->
+<!--          <el-option :value="0" label="否"/>-->
         </el-select>
       </el-form-item>
       <el-form-item label="二级分类">
         <el-select v-model="bookQuery.erjiFenlei" clearable placeholder="请选择">
-          <el-option :value="1" label="是"/>
-          <el-option :value="0" label="否"/>
+<!--          <el-option :value="1" label="是"/>-->
+<!--          <el-option :value="0" label="否"/>-->
         </el-select>
       </el-form-item>
 
@@ -79,6 +78,11 @@
       <router-link :to="'/cms/book/create'">
         <el-button type="primary">添加书籍</el-button>
       </router-link>
+      <el-button type="primary" @click="daochuExcel">导出<i class="el-icon-download el-icon--right"></i></el-button>
+      <el-button type="primary" @click="excelDialogVisible=true">导入<i class="el-icon-upload el-icon--right"></i></el-button>
+
+
+
     </el-form>
 
     <!--&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&7-->
@@ -93,19 +97,8 @@
       <el-table-column prop="id" label="书籍ID" width="80"/>
       <el-table-column prop="bookName" label="书名"/>
       <el-table-column prop="author" label="作者"/>
-
-      <!--    **********************************************************-->
-      <el-table-column label="一级分类">
-        <template slot-scope="scope">
-          {{ scope.row.yijiFenlei === 1 ? '是' : '否'}}
-        </template>
-      </el-table-column>
-      <!--      **********************************************************-->
-      <el-table-column label="二级分类">
-        <template slot-scope="scope">
-          {{ scope.row.erjiFenlei === 1 ? '是' : '否'}}
-        </template>
-      </el-table-column>
+      <el-table-column prop="yijiFenlei" label="一级分类" :formatter="formatYiji"/>
+      <el-table-column prop="erjiFenlei" label="二级分类" :formatter="formatErji"/>
       <!--      **********************************************************-->
       <el-table-column label="连载">
         <template slot-scope="scope">
@@ -156,6 +149,10 @@
           </el-button>
           <el-button v-else type="danger" size="mini" @click="shangxiajiaBook(scope.row.id, 0)">下架书籍</el-button>
           <!--##########################################################################################################################################-->
+
+
+
+
         </template>
       </el-table-column>
     </el-table>
@@ -170,12 +167,34 @@
       layout="total,prev,pager,next,jumper"
       @current-change="pageBook1">
     </el-pagination>
+    <!--    **********************************************************-->
+    <!--EasyExcel导入窗口-->
+    <el-dialog
+      title="Excel导入"
+      :visible.sync="excelDialogVisible"
+      width="30%">
+      <el-upload
+        ref="upload"
+        name="file"
+        accept="application/vnd.ms-excel"
+        :action="BASE_API + '/cms/book/daoruExcel'"
+        :on-success="fileUploadSuccess"
+        :on-error="fileUploadError"
+        :disabled="importBtnDisabled"
+        :limit="1"
+        :auto-upload="false">
+        <el-button slot="trigger" size="small" type="primary">选取文件</el-button>
+        <el-button style="margin-left: 10px;" size="small" type="success" @click="daoruExcel">上传到服务器</el-button>
+      </el-upload>
+    </el-dialog>
+
   </div>
 </template>
 <!--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%-->
 <script>
   //③
   import book from '@/api/cms/book';
+  import category from "@/api/cms/category";
   //①
   export default {
     // ##data用来定义变量，并为其初始化内容
@@ -189,13 +208,16 @@
         currentTime: '',// ##当前时间
         BASE_API: process.env.VUE_APP_BASE_API, // ## 接口API地址
         excelDialogVisible: false, // ## 导入Excel窗口, false为关闭
-        importBtnDisabled: false // ## 按钮是否禁用,false为不禁用
+        importBtnDisabled: false, // ## 按钮是否禁用,false为不禁用
+        yijiFenleiList:[], // 一级分类列表
+        erjiFenleiList:[]  // 二级分类列表
       }
 
     },
     //④
     created() { //生命周期，在页面尚未渲染之前调用， data与methods 已经被初始化
       this.pageBook()
+      this.getYijiCategoryList()
     },
     methods: {
       // ## 查询数据列表
@@ -295,6 +317,64 @@
             message: '已取消设置'
           })
         })
+      },
+      daochuExcel(){ // EasyExvel导出
+        document.location.href = this.BASE_API + '/cms/book/daochuExcel'
+      },
+
+      daoruExcel() { // ## 导入Excel
+        this.importBtnDisabled = true   // ## 禁用按钮
+        this.$refs.upload.submit()    // ## 上传
+      },
+      fileUploadSuccess(response) { // ## 导入成功后执行方法
+        // ## 导入成功后关闭窗口
+        this.excelDialogVisible = false
+        // ## 重新查询获取新数据
+        this.pageBook();
+        // ## 提示信息
+        this.$message({
+          type: 'success',
+          message: '导入成功'
+        })
+      },
+      fileUploadError() { // ## 导入失败后执行方法
+         // ## 提示信息
+        this.$message({
+          type: 'error',
+          message: '导入失败'
+        })
+      },
+      getYijiCategoryList() {   // 获取一级分类列表
+        category.getCategoryList()
+          .then(response => {
+            this.yijiFenleiList = response.data.items
+          })
+      },
+      formatYiji(row){ // 一级分类显示    row表示当前这一行
+        //循环一级分类
+        for (let i = 0; i <this.yijiFenleiList.length ; i++) {
+          // 判断当前行的一级分类是否等于 一级分类的id
+          if (row.yijiFenlei === this.yijiFenleiList[i].id){
+                 // 等于 则返回 一级分类的分类名称
+                 return this.yijiFenleiList[i].title
+          }
+        }
+      },
+      formatErji(row){ // 二级分类显示
+          // row 表示当前这一行的属于一级分类  循环一级分类
+        for (let i = 0; i <this.yijiFenleiList.length ; i++) {
+          // 判断当前行的一级分类是否等与 一级分类的id
+          if (row.yijiFenlei === this.yijiFenleiList[i].id){
+            // 等于 则继续循环 二级分类，   因为一级分类包含二级分类， 所以通过一级分类循环二级分类
+            for (let j = 0; j <this.yijiFenleiList[i].erjiFenleiList.length ; j++) {
+              // 判断当前行的二级分类 是否 等于二级分类id
+              if (row.erjiFenlei === this.yijiFenleiList[i].erjiFenleiList[j].id ){
+                //等于  则 返还二级分类的分类名称
+                return this.yijiFenleiList[i].erjiFenleiList[j].title
+              }
+            }
+          }
+        }
       }
     }
   }

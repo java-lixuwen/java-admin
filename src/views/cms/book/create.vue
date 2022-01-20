@@ -11,6 +11,33 @@
       </el-col>
     </el-form-item>
     <!-- TODO 分类 -->
+    <el-form-item label="一级分类">
+      <el-select @change="getErjiCategoryList" v-model="book.yijiFenlei" placeholder="请选择">
+        <el-option
+          v-for="item in yijiFenleiList"
+          :key="item.id"
+          :label="item.title"
+          :value="item.id">
+        </el-option>
+      </el-select>
+    </el-form-item>
+    <el-form-item label="二级分类">
+      <el-select v-model="book.erjiFenlei" placeholder="请选择">
+        <el-option
+          v-for="item in erjiFenleiList"
+          :key="item.id"
+          :label="item.title"
+          :value="item.id">
+        </el-option>
+      </el-select>
+    </el-form-item>
+
+
+
+
+
+
+
     <!-- TODO 版权 -->
     <!-- TODO 批次 -->
     <!-- TODO 书单 -->
@@ -54,6 +81,18 @@
       <el-input v-model="book.jianjie" :rows="10" type="textarea"/>
     </el-form-item>
     <!-- TODO 书封 -->
+    <el-form-item label="书封">
+      <el-upload
+        class="avatar-uploader"
+        :action="BASE_API+'/oss/uploadFile'"
+        :show-file-list="false"
+        :on-success="handleAvatarSuccess"
+        :before-upload="beforeAvatarUpload">
+        <img v-if="book.imageUrl" :src="book.imageUrl" class="avatar">
+        <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+      </el-upload>
+    </el-form-item>
+
     <el-form-item>
       <el-button :disabled="saveBtnDisabled" type="primary" @click="saveBook()">保存</el-button>
     </el-form-item>
@@ -62,16 +101,27 @@
 
 <script>
   import book from '@/api/cms/book'
+  import category from '@/api/cms/category'
 
     export default {
       data() {
         return {
-          book: {},
+          book: {
+            imageUrl: '',
+            yijiFenlei: '',
+            erjiFenlei: ''
+          },
           saveBtnDisabled: false, // ##不禁用保存按钮
-          BASE_API: process.env.VUE_APP_BASE_API
+          BASE_API: process.env.VUE_APP_BASE_API, //后端服务地址  相当于后端的登录时候的 localhost：
+          yijiFenleiList: [], //一级分类列表
+          erjiFenleiList: []  //二级分类列表
+
         }
       },
-      methods:{
+      created() {
+        this.getYijiCategoryList()
+      },
+      methods: {
         saveBook() {
           // 禁用按钮
           this.saveBtnDisabled = true
@@ -86,10 +136,68 @@
               //保存成功后跳转到list 页面
               this.$router.push('/cms/book/list')
             })
-         }
+        },
+        handleAvatarSuccess(res, file) {
+          this.book.imageUrl = res.data.uploadUrl
+        },
+        beforeAvatarUpload(file) {
+          const isJPG = file.type === 'image/jpeg'
+          const isLt2M = file.size / 1024 / 1024 < 2;
+
+          if (!isJPG) {
+            this.$message.error('上传头像图片只能是 JPG 格式!')
+          }
+          if (!isLt2M) {
+            this.$message.error('上传头像图片大小不能超过 2MB!')
+          }
+          return isJPG && isLt2M;
+        },
+        getYijiCategoryList() {
+          category.getCategoryList()
+            .then(response => {
+              this.yijiFenleiList = response.data.items
+            })
+        },
+        getErjiCategoryList(value) {
+          //清空
+          this.book.erjiFenlei = '';
+
+          for (let i = 0; i < this.yijiFenleiList.length; i++) {
+            if (value === this.yijiFenleiList[i].id) {
+              this.erjiFenleiList = this.yijiFenleiList[i].erjiFenleiList
+            }
+          }
+        }
       }
     }
+
+
 </script>
+<style>
+  .avatar-uploader .el-upload {
+    border: 1px dashed #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .avatar-uploader .el-upload:hover {
+    border-color: #409EFF;
+  }
+  .avatar-uploader-icon {
+    font-size: 28px;
+    color: #8c939d;
+    width: 178px;
+    height: 178px;
+    line-height: 178px;
+    text-align: center;
+  }
+  .avatar {
+    width: 178px;
+    height: 178px;
+    display: block;
+  }
+</style>
 
 <style scoped>
 

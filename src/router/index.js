@@ -84,6 +84,85 @@ export const constantRoutes = [
       }
     ]
   },
+
+
+
+
+
+
+
+
+
+  {
+    path: '/conpyriht/banquanyinjin',
+    component: Layout,
+    redirect: '/conpyriht/banquanyinjin',
+    name: 'Banquanyinjin', // ## 每个路由name不能相同
+    meta: { title: '版权引进', icon: 'example' },
+    alwaysShow: true,
+    children: [
+      {
+        path: 'list',
+        name: 'ConpyrihtBanquanyinjinbanquanList',
+        component: () => import('@/views/conpyriht/banquanyinjin/banquanlist'),
+        meta: { title: '版权方管理', icon: 'table' }
+      },
+      {
+        path: 'picilist',
+        name: 'ConpyrihtBanquanyinjinpiciList',
+        component: () => import('@/views/conpyriht/banquanyinjin/picilist'),
+        meta: { title: '批次管理', icon: 'table' }
+      },
+      {
+        path: 'shudanlist',
+        name: 'ConpyrihtBanquanyinjinshudanList',
+        component: () => import('@/views/conpyriht/banquanyinjin/shudanlist'),
+        meta: { title: '书单管理', icon: 'table' }
+      },
+      {
+        path: 'jiekoulist',
+        name: 'ConpyrihtBanquanyinjinjiekouList',
+        component: () => import('@/views/conpyriht/banquanyinjin/jiekoulist'),
+        meta: { title: '接口管理', icon: 'table' }
+      },
+
+
+
+
+      {
+        path: 'create',
+        name: 'ConpyrihtBanquanyinjinCreate',
+        component: () => import('@/views/conpyriht/banquanyinjin/create'),
+        meta: { title: '添加版权', icon: 'form' },
+        hidden: true
+      },
+      {
+        path: 'update/:id', // ## :id 相当于占位符,要传参数
+        name: 'ConpyrihtBanquanyinjinUpdate',
+        component: () => import('@/views/conpyriht/banquanyinjin/update'),
+        meta: { title: '修改版权', noCache: true },
+        hidden: true
+      },
+      // {
+      //   path: 'update/:id', // ## :id 相当于占位符,要传参数
+      //   name: 'ConpyrihtBanquanyinjinUpdate',
+      //   component: () => import('@/views/conpyriht/banquanyinjin/update'),
+      //   meta: { title: '接口管理', noCache: true },
+      //   hidden: true
+      // }
+    ]
+  },
+
+
+
+
+
+
+
+
+
+
+
   {
     path: '/example',
     component: Layout,

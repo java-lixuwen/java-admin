@@ -1,6 +1,6 @@
 module.exports = {
 
-  title: '汇才同飞',
+  title: '汇才同飞学院后台管理系统',
 
   /**
    * @type {boolean} true | false
